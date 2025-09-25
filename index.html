@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müzik Platformu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #fff;
+        }
+        /* Kaydırma çubuğu stilleri */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #181818;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #535353;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #737373;
+        }
+        .card-play-button {
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .group:hover .card-play-button {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .song-card-img {
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+        }
+        #player-thumb, #fullscreen-thumb {
+            object-fit: cover;
+        }
+        #progressBar, #fs-progressBar {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #4d4d4d;
+            outline: none;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        #progressBar::-webkit-slider-thumb, #fs-progressBar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #progressBar:hover::-webkit-slider-thumb, #fs-progressBar:hover::-webkit-slider-thumb {
+            background: #1DB954;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <div class="flex h-screen">
+        <!-- Kenar Çubuğu - Sadece Masaüstü -->
+        <aside class="w-64 bg-black p-6 flex-shrink-0 flex-col hidden md:flex">
+            <div>
+                <h1 class="text-2xl font-bold mb-8">Müzik Platformu</h1>
+                <nav>
+                    <ul>
+                        <li><a href="#" id="nav-home" class="flex items-center gap-4 text-lg font-semibold text-white py-2 rounded"><i class="fas fa-home w-6"></i> Anasayfa</a></li>
+                        <li><a href="#" id="nav-search" class="flex items-center gap-4 text-lg font-semibold text-gray-400 hover:text-white py-2 rounded transition-colors"><i class="fas fa-search w-6"></i> Ara</a></li>
+                        <li><a href="#" class="flex items-center gap-4 text-lg font-semibold text-gray-400 hover:text-white py-2 rounded transition-colors mt-4"><i class="fas fa-book w-6"></i> Kitaplığın</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Ana İçerik -->
+        <main id="main-content" class="flex-1 bg-gradient-to-b from-[#222] to-[#121212] p-4 md:p-8 overflow-y-auto pb-48 md:pb-32">
+            <!-- Arama Sayfası -->
+            <div id="search-view" class="hidden">
+                <div class="relative mb-6">
+                    <input type="text" id="search-input" placeholder="Ne dinlemek istersin?" class="w-full bg-[#333] text-white rounded-full py-3 px-12 focus:outline-none focus:ring-2 focus:ring-[#1DB954]">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div id="search-results-container">
+                     <h2 class="text-2xl font-bold mb-4">Sonuçlar</h2>
+                     <div id="search-results" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                        <!-- Arama sonuçları buraya gelecek -->
+                     </div>
+                </div>
+            </div>
+            
+            <!-- Anasayfa -->
+            <div id="home-view">
+                 <h2 class="text-3xl font-bold mb-6">Sana Özel Müzikler</h2>
+                 <div id="song-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                    <!-- Şarkı kartları buraya gelecek -->
+                 </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Mobil Alt Navigasyon -->
+    <nav id="mobile-nav" class="fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-md border-t border-gray-800 flex md:hidden justify-around items-center z-40">
+        <a href="#" id="mobile-nav-home" class="flex flex-col items-center gap-1 text-white w-20">
+            <i class="fas fa-home text-xl"></i>
+            <span class="text-xs">Anasayfa</span>
+        </a>
+        <a href="#" id="mobile-nav-search" class="flex flex-col items-center gap-1 text-gray-400 w-20">
+            <i class="fas fa-search text-xl"></i>
+            <span class="text-xs">Ara</span>
+        </a>
+        <a href="#" class="flex flex-col items-center gap-1 text-gray-400 w-20">
+            <i class="fas fa-book text-xl"></i>
+            <span class="text-xs">Kitaplığın</span>
+        </a>
+    </nav>
+
+    <!-- Müzik Çalar Paneli -->
+    <div id="player-container" class="fixed bottom-20 md:bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-gray-800 flex items-center px-4 z-50 transition-transform duration-300 translate-y-full">
+        <div class="flex items-center gap-4 w-1/3 md:w-1/4">
+            <img id="player-thumb" src="https://placehold.co/64x64/181818/181818?text=." alt="Albüm Kapağı" class="w-16 h-16 rounded-md">
+            <div class="hidden md:block">
+                <h3 id="player-title" class="font-semibold">Şarkı Seç</h3>
+                <p id="player-uploader" class="text-sm text-gray-400">Sanatçı</p>
+            </div>
+             <button id="expand-player" class="ml-auto md:ml-4 text-gray-400 hover:text-white"><i class="fas fa-expand-alt"></i></button>
+        </div>
+        <div class="flex flex-col items-center justify-center gap-2 flex-1 w-1/3 md:w-1/2">
+            <div class="flex items-center gap-4 md:gap-6">
+                <button class="text-gray-400 hover:text-white transition-colors hidden md:block"><i class="fas fa-random fa-lg"></i></button>
+                <button class="text-gray-400 hover:text-white transition-colors hidden md:block"><i class="fas fa-step-backward fa-lg"></i></button>
+                <button id="play-pause-btn" class="bg-white text-black w-10 h-10 rounded-full flex items-center justify-center hover:scale-105 transition-transform"><i id="play-pause-icon" class="fas fa-play"></i></button>
+                <button class="text-gray-400 hover:text-white transition-colors hidden md:block"><i class="fas fa-step-forward fa-lg"></i></button>
+                <button class="text-gray-400 hover:text-white transition-colors hidden md:block"><i class="fas fa-redo fa-lg"></i></button>
+            </div>
+            <div class="hidden md:flex items-center gap-2 w-full max-w-xl">
+                <span id="current-time" class="text-xs text-gray-400 w-10 text-right">0:00</span>
+                <input type="range" id="progressBar" value="0" min="0" max="100" class="w-full">
+                <span id="duration" class="text-xs text-gray-400 w-10">0:00</span>
+            </div>
+        </div>
+        <div class="hidden md:flex items-center justify-end gap-4 w-1/4">
+            <i class="fas fa-volume-up text-gray-400"></i>
+            <input type="range" id="volume-control" class="w-24" min="0" max="1" step="0.01" value="1">
+        </div>
+    </div>
+    
+    <!-- Tam Ekran Müzik Çalar -->
+    <div id="fullscreen-player" class="fixed inset-0 bg-gradient-to-b from-slate-800 to-black z-[100] flex flex-col items-center justify-center p-8 transition-all duration-500 ease-in-out opacity-0 pointer-events-none transform scale-95">
+        <button id="collapse-player" class="absolute top-6 right-8 text-3xl text-gray-400 hover:text-white">&times;</button>
+        <img id="fullscreen-thumb" src="" alt="Albüm Kapağı" class="w-80 h-80 md:w-96 md:h-96 rounded-lg shadow-2xl mb-6">
+        <h2 id="fullscreen-title" class="text-3xl md:text-4xl font-bold text-center"></h2>
+        <p id="fullscreen-uploader" class="text-lg md:text-xl text-gray-300 mt-2"></p>
+
+        <div class="w-full max-w-2xl mt-8">
+            <!-- Tam Ekran İlerleme Çubuğu -->
+            <div class="flex items-center gap-2">
+                <span id="fs-current-time" class="text-xs text-gray-400 w-10 text-right">0:00</span>
+                <input type="range" id="fs-progressBar" value="0" min="0" max="100" class="w-full">
+                <span id="fs-duration" class="text-xs text-gray-400 w-10">0:00</span>
+            </div>
+            <!-- Tam Ekran Kontroller -->
+            <div class="flex items-center justify-center gap-8 mt-4">
+                <button class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-random fa-lg"></i></button>
+                <button class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-step-backward fa-2x"></i></button>
+                <button id="fs-play-pause-btn" class="bg-white text-black w-16 h-16 rounded-full flex items-center justify-center hover:scale-105 transition-transform"><i id="fs-play-pause-icon" class="fas fa-play text-xl"></i></button>
+                <button class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-step-forward fa-2x"></i></button>
+                <button class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-redo fa-lg"></i></button>
+            </div>
+        </div>
+    </div>
+
+
+    <audio id="audio-player"></audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elementler
+            const songListContainer = document.getElementById('song-list');
+            const searchResultsContainer = document.getElementById('search-results');
+            const audioPlayer = document.getElementById('audio-player');
+            const playerContainer = document.getElementById('player-container');
+
+            // Player UI
+            const playerThumb = document.getElementById('player-thumb');
+            const playerTitle = document.getElementById('player-title');
+            const playerUploader = document.getElementById('player-uploader');
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const playPauseIcon = document.getElementById('play-pause-icon');
+            const progressBar = document.getElementById('progressBar');
+            const currentTimeEl = document.getElementById('current-time');
+            const durationEl = document.getElementById('duration');
+            const volumeControl = document.getElementById('volume-control');
+            
+            // Tam Ekran Player
+            const expandPlayerBtn = document.getElementById('expand-player');
+            const collapsePlayerBtn = document.getElementById('collapse-player');
+            const fullscreenPlayer = document.getElementById('fullscreen-player');
+            const fullscreenThumb = document.getElementById('fullscreen-thumb');
+            const fullscreenTitle = document.getElementById('fullscreen-title');
+            const fullscreenUploader = document.getElementById('fullscreen-uploader');
+            const fsPlayPauseBtn = document.getElementById('fs-play-pause-btn');
+            const fsPlayPauseIcon = document.getElementById('fs-play-pause-icon');
+            const fsProgressBar = document.getElementById('fs-progressBar');
+            const fsCurrentTimeEl = document.getElementById('fs-current-time');
+            const fsDurationEl = document.getElementById('fs-duration');
+
+            // Navigasyon
+            const navHome = document.getElementById('nav-home');
+            const navSearch = document.getElementById('nav-search');
+            const mobileNavHome = document.getElementById('mobile-nav-home');
+            const mobileNavSearch = document.getElementById('mobile-nav-search');
+            const homeView = document.getElementById('home-view');
+            const searchView = document.getElementById('search-view');
+            const searchInput = document.getElementById('search-input');
+
+            // Uygulama Durumu
+            let allSongs = {};
+            let isPlaying = false;
+            let currentSongId = null;
+            let songsDataString = ''; 
+            let hasBeenManuallyClosed = false; // Kullanıcının tam ekranı kapatıp kapatmadığını izler
+
+            // --- API & Veri Yönetimi ---
+            async function fetchSongs() {
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/api/songs');
+                    if (!response.ok) throw new Error(`HTTP hatası! Durum: ${response.status}`);
+                    
+                    const newSongs = await response.json();
+                    const newSongsDataString = JSON.stringify(newSongs);
+
+                    if (newSongsDataString !== songsDataString) {
+                        console.log("links.json güncellendi. Arayüz yenileniyor.");
+                        songsDataString = newSongsDataString;
+                        allSongs = newSongs;
+                        updateCurrentView();
+                    }
+                } catch (error) {
+                    console.error("Şarkılar yüklenemedi:", error);
+                    if(!Object.keys(allSongs).length) {
+                         songListContainer.innerHTML = `<p class="text-red-500 col-span-full">Şarkılar yüklenirken bir hata oluştu.</p>`;
+                    }
+                }
+            }
+
+            // --- Arayüz Oluşturma ve Güncelleme ---
+
+            function updateCurrentView() {
+                if (homeView.classList.contains('hidden')) {
+                    displaySearchResults(searchInput.value);
+                } else {
+                    displayRandomSongs();
+                }
+            }
+
+            function displayRandomSongs() {
+                const songIds = Object.keys(allSongs);
+                const shuffledIds = songIds.sort(() => 0.5 - Math.random());
+                renderSongCards(songListContainer, shuffledIds);
+            }
+            
+            function displaySearchResults(query) {
+                 if (!query) {
+                     searchResultsContainer.innerHTML = '';
+                     return;
+                 };
+                 const lowerCaseQuery = query.toLowerCase();
+                 const resultIds = Object.keys(allSongs).filter(id => {
+                     const song = allSongs[id];
+                     return song.title.toLowerCase().includes(lowerCaseQuery) || 
+                            song.uploader.toLowerCase().includes(lowerCaseQuery) || 
+                            song.album.toLowerCase().includes(lowerCaseQuery);
+                 });
+                 
+                 renderSongCards(searchResultsContainer, resultIds);
+
+                 if(resultIds.length === 0) {
+                     searchResultsContainer.innerHTML = `<p class="text-gray-400 col-span-full">Sonuç bulunamadı.</p>`;
+                 }
+            }
+            
+            function renderSongCards(container, songIdArray) {
+                container.innerHTML = '';
+                songIdArray.forEach(id => {
+                    const song = allSongs[id];
+                    const card = createSongCard(id, song);
+                    container.appendChild(card);
+                });
+            }
+
+            function createSongCard(id, song) {
+                const card = document.createElement('div');
+                card.className = 'bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-colors cursor-pointer group relative';
+                card.dataset.songId = id;
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${song.thumbnail_url}" alt="${song.title}" class="w-full song-card-img rounded-md mb-4 shadow-lg">
+                        <button class="card-play-button absolute bottom-2 right-2 bg-[#1DB954] w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                            <i class="fas fa-play text-black text-xl"></i>
+                        </button>
+                    </div>
+                    <h4 class="font-bold truncate">${song.title}</h4>
+                    <p class="text-sm text-gray-400 truncate">${song.uploader}</p>
+                `;
+                card.addEventListener('click', () => playSong(id));
+                return card;
+            }
+
+            // --- Müzik Çalar Fonksiyonları ---
+
+            function playSong(id) {
+                const song = allSongs[id];
+                if (!song || !song.audio_url) {
+                    alert("Bu şarkı çalınamıyor.");
+                    return;
+                };
+                
+                currentSongId = id;
+                audioPlayer.src = song.audio_url;
+                audioPlayer.play().catch(e => console.error("Çalma hatası:", e));
+                isPlaying = true;
+
+                updatePlayerUI(song);
+                updatePlayPauseIcon();
+                
+                playerContainer.classList.remove('translate-y-full');
+
+                const isMobile = window.innerWidth < 768;
+                if (isMobile || !hasBeenManuallyClosed) {
+                    showFullscreenPlayer();
+                }
+            }
+
+            function togglePlayPause() {
+                if (!audioPlayer.src) return;
+                if (isPlaying) audioPlayer.pause();
+                else audioPlayer.play();
+                isPlaying = !isPlaying;
+                updatePlayPauseIcon();
+            }
+
+            function updatePlayerUI(song) {
+                playerThumb.src = song.thumbnail_url;
+                playerTitle.textContent = song.title;
+                playerUploader.textContent = song.uploader;
+
+                fullscreenThumb.src = song.thumbnail_url;
+                fullscreenTitle.textContent = song.title;
+                fullscreenUploader.textContent = song.uploader;
+            }
+
+            function updatePlayPauseIcon() {
+                const iconClass = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+                playPauseIcon.className = iconClass;
+                fsPlayPauseIcon.className = `${iconClass} text-xl`;
+            }
+            
+            function formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            function showFullscreenPlayer() {
+                fullscreenPlayer.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            }
+
+            function hideFullscreenPlayer() {
+                fullscreenPlayer.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+                if (window.innerWidth >= 768) {
+                    hasBeenManuallyClosed = true;
+                }
+            }
+            
+            function showPage(page) {
+                homeView.classList.add('hidden');
+                searchView.classList.add('hidden');
+                
+                navHome.classList.replace('text-white', 'text-gray-400');
+                navSearch.classList.replace('text-white', 'text-gray-400');
+                mobileNavHome.classList.replace('text-white', 'text-gray-400');
+                mobileNavSearch.classList.replace('text-white', 'text-gray-400');
+
+                if(page === 'home') {
+                    homeView.classList.remove('hidden');
+                    navHome.classList.replace('text-gray-400', 'text-white');
+                    mobileNavHome.classList.replace('text-gray-400', 'text-white');
+                } else if (page === 'search') {
+                    searchView.classList.remove('hidden');
+                    navSearch.classList.replace('text-gray-400', 'text-white');
+                    mobileNavSearch.classList.replace('text-gray-400', 'text-white');
+                    searchInput.focus();
+                }
+            }
+
+            // --- Event Listeners ---
+            
+            [playPauseBtn, fsPlayPauseBtn].forEach(btn => btn.addEventListener('click', togglePlayPause));
+            
+            volumeControl.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
+
+            [progressBar, fsProgressBar].forEach(bar => bar.addEventListener('input', (e) => { audioPlayer.currentTime = e.target.value; }));
+            
+            audioPlayer.addEventListener('timeupdate', () => {
+                const { currentTime, duration } = audioPlayer;
+                if(duration) {
+                    progressBar.value = currentTime;
+                    currentTimeEl.textContent = formatTime(currentTime);
+                    fsProgressBar.value = currentTime;
+                    fsCurrentTimeEl.textContent = formatTime(currentTime);
+                }
+            });
+            audioPlayer.addEventListener('loadedmetadata', () => {
+                 const duration = audioPlayer.duration;
+                 durationEl.textContent = formatTime(duration);
+                 progressBar.max = duration;
+                 fsDurationEl.textContent = formatTime(duration);
+                 fsProgressBar.max = duration;
+            });
+            audioPlayer.addEventListener('ended', () => {
+                isPlaying = false;
+                updatePlayPauseIcon();
+            });
+            
+            expandPlayerBtn.addEventListener('click', showFullscreenPlayer);
+            collapsePlayerBtn.addEventListener('click', hideFullscreenPlayer);
+
+            [navHome, mobileNavHome].forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); showPage('home'); }));
+            [navSearch, mobileNavSearch].forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); showPage('search'); }));
+
+            searchInput.addEventListener('input', (e) => displaySearchResults(e.target.value));
+
+            // Başlangıç
+            fetchSongs();
+            setInterval(fetchSongs, 10000);
+        });
+    </script>
+</body>
+</html>
+
