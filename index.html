@@ -96,7 +96,7 @@
                 <div id="search-results-container">
                      <h2 class="text-2xl font-bold mb-4">Sonuçlar</h2>
                      <div id="search-results" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                        <!-- Arama sonuçları buraya gelecek -->
+                         <!-- Arama sonuçları buraya gelecek -->
                      </div>
                 </div>
             </div>
@@ -105,7 +105,7 @@
             <div id="home-view">
                  <h2 class="text-3xl font-bold mb-6">Sana Özel Müzikler</h2>
                  <div id="song-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                    <!-- Şarkı kartları buraya gelecek -->
+                     <!-- Şarkı kartları buraya gelecek -->
                  </div>
             </div>
         </main>
@@ -236,7 +236,8 @@
             // --- API & Veri Yönetimi ---
             async function fetchSongs() {
                 try {
-                    const response = await fetch('http://127.0.0.1:5000/api/songs');
+                    // SUNUCU ADRESİ 'links.json' OLARAK DEĞİŞTİRİLDİ
+                    const response = await fetch('links.json');
                     if (!response.ok) throw new Error(`HTTP hatası! Durum: ${response.status}`);
                     
                     const newSongs = await response.json();
@@ -251,7 +252,7 @@
                 } catch (error) {
                     console.error("Şarkılar yüklenemedi:", error);
                     if(!Object.keys(allSongs).length) {
-                         songListContainer.innerHTML = `<p class="text-red-500 col-span-full">Şarkılar yüklenirken bir hata oluştu.</p>`;
+                         songListContainer.innerHTML = `<p class="text-red-500 col-span-full">Şarkılar yüklenirken bir hata oluştu. 'links.json' dosyasının olduğundan emin olun.</p>`;
                     }
                 }
             }
@@ -274,8 +275,8 @@
             
             function displaySearchResults(query) {
                  if (!query) {
-                     searchResultsContainer.innerHTML = '';
-                     return;
+                      searchResultsContainer.innerHTML = '';
+                      return;
                  };
                  const lowerCaseQuery = query.toLowerCase();
                  const resultIds = Object.keys(allSongs).filter(id => {
@@ -324,7 +325,7 @@
             function playSong(id) {
                 const song = allSongs[id];
                 if (!song || !song.audio_url) {
-                    alert("Bu şarkı çalınamıyor.");
+                    console.error("Bu şarkı çalınamıyor: " + id);
                     return;
                 };
                 
@@ -451,4 +452,3 @@
     </script>
 </body>
 </html>
-
